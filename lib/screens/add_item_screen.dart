@@ -10,10 +10,18 @@ class AddItemScreen extends StatefulWidget {
 }
 
 class _AddItemScreenState extends State<AddItemScreen> {
+  // Controller for text fields
+
   final nameController = TextEditingController();
+
   final categoryController = TextEditingController();
 
+  // Item service instance
+
   final ItemService itemService = ItemService();
+
+  // Loading state
+
   bool isLoading = false;
 
   @override
@@ -23,12 +31,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
     super.dispose();
   }
 
+  // Add item method
   Future<void> addItem() async {
     if (nameController.text.trim().isEmpty ||
         categoryController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fill all fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fill all fields')));
       return;
     }
 
@@ -46,16 +55,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item added')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Item added')));
 
       nameController.clear();
       categoryController.clear();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add item')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to add item')));
     } finally {
       if (mounted) {
         setState(() {
@@ -93,9 +102,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: isLoading ? null : addItem,
-                child: isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Add Item'),
+                child:
+                    isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text('Add Item'),
               ),
             ),
           ],
