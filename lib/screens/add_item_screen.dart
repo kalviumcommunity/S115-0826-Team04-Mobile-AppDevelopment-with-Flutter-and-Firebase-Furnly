@@ -10,17 +10,9 @@ class AddItemScreen extends StatefulWidget {
 }
 
 class _AddItemScreenState extends State<AddItemScreen> {
-  // Controller for text fields
-
   final nameController = TextEditingController();
-
   final categoryController = TextEditingController();
-
-  // Item service instance
-
   final ItemService itemService = ItemService();
-
-  // Loading state
 
   bool isLoading = false;
 
@@ -31,7 +23,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     super.dispose();
   }
 
-  // Add item method
   Future<void> addItem() async {
     if (nameController.text.trim().isEmpty ||
         categoryController.text.trim().isEmpty) {
