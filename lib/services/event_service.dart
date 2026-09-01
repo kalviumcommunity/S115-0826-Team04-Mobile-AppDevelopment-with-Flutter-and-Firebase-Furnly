@@ -1,11 +1,27 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/event_model.dart';
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<void> logEvent(EventModel event) async {
-    await _firestore.collection('events').add(event.toMap());
+  Future<void> logEvent(EventModel event, {File? photo}) async {
+    final docRef = _firestore.collection('events').doc();
+
+    String? photoUrl;
+
+    if (photo != null) {
+      final ref = _storage.ref().child('event_photos/${docRef.id}.jpg');
+      await ref.putFile(photo);
+      photoUrl = await ref.getDownloadURL();
+    }
+
+    await docRef.set({
+      ...event.toMap(),
+      'photoUrl': photoUrl,
+    });
 
     await _firestore.collection('items').doc(event.itemId).update({
       'currentStatus': event.type == 'pickup' ? 'available' : 'out',
@@ -32,12 +48,10 @@ class EventService {
     final days = now.difference(startDate).inDays;
     final safeDays = days < 1 ? 1 : days;
 
-    final computedCharge = safeDays * ratePerDay * itemCount;
-
     await rentalRef.update({
       'actualReturnDate': Timestamp.fromDate(now),
       'billingStatus': 'completed',
-      'computedCharge': computedCharge,
+      'computedCharge': safeDays * ratePerDay * itemCount,
     });
   }
 }
