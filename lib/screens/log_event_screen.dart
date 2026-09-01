@@ -59,7 +59,7 @@ class _LogEventScreenState extends State<LogEventScreen> {
         notes: notesController.text.trim(),
       );
 
-      await eventService.logEvent(event);
+      await eventService.logEvent(event, photo: selectedPhoto);
 
       if (!mounted) return;
 
