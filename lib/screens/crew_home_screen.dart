@@ -19,17 +19,16 @@ class CrewHomeScreen extends StatelessWidget {
               style: TextStyle(fontSize: 22),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const LogEventScreen(),
+                    builder: (_) => const LogEventScreen(),
                   ),
                 );
               },
-              icon: const Icon(Icons.assignment_add),
-              label: const Text('Log Event'),
+              child: const Text('Log Delivery / Pickup'),
             ),
           ],
         ),
