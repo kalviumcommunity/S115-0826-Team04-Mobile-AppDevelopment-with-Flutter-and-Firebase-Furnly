@@ -1,1 +1,26 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"furnly-app","appId":"1:912609106272:android:870e4f4d8a8502d076e605","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"furnly-app","configurations":{"android":"1:912609106272:android:870e4f4d8a8502d076e605","ios":"1:912609106272:ios:3c1572f57d821ee076e605","windows":"1:912609106272:web:ece29666770d109876e605"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "furnly-app",
+          "appId": "1:912609106272:android:870e4f4d8a8502d076e605",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "furnly-app",
+          "configurations": {
+            "android": "1:912609106272:android:870e4f4d8a8502d076e605",
+            "ios": "1:912609106272:ios:3c1572f57d821ee076e605",
+            "windows": "1:912609106272:web:ece29666770d109876e605"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

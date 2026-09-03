@@ -27,30 +27,38 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn() &&
-        (request.auth.uid == userId || isAdmin());
-
-      allow write: if isAdmin();
+        (request.auth.uid == userId || isAdmin() || isDispatcher());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || request.auth.uid == userId;
+      allow delete: if isAdmin();
     }
 
     match /items/{itemId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isDispatcher() || isCrew();
+      allow delete: if isAdmin();
     }
 
     match /rentals/{rentalId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isDispatcher();
+      allow create: if isAdmin() || isDispatcher();
+      allow update: if isAdmin() || isDispatcher() ||
+        (isCrew() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['billingStatus', 'actualReturnDate', 'computedCharge']));
+      allow delete: if isAdmin();
     }
 
     match /events/{eventId} {
       allow read: if isSignedIn();
-      allow create: if isCrew();
+      allow create: if isCrew() && request.resource.data.crewId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
     match /customers/{customerId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isDispatcher();
     }
   }
 }
