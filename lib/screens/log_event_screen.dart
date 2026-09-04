@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/event_model.dart';
 import '../services/event_service.dart';
+import '../widgets/error_banner.dart';
 
 class LogEventScreen extends StatefulWidget {
   const LogEventScreen({super.key});
@@ -21,6 +22,7 @@ class _LogEventScreenState extends State<LogEventScreen> {
   String selectedType = 'delivery';
   File? selectedPhoto;
   bool isLoading = false;
+  String? errorMessage;
 
   final EventService eventService = EventService();
   final ImagePicker picker = ImagePicker();
@@ -46,6 +48,7 @@ class _LogEventScreenState extends State<LogEventScreen> {
 
     setState(() {
       isLoading = true;
+      errorMessage = null;
     });
 
     try {
@@ -75,9 +78,9 @@ class _LogEventScreenState extends State<LogEventScreen> {
         selectedPhoto = null;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to log event')),
-      );
+      setState(() {
+        errorMessage = 'Failed to log event.';
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -146,6 +149,8 @@ class _LogEventScreenState extends State<LogEventScreen> {
               icon: const Icon(Icons.camera_alt),
               label: Text(selectedPhoto == null ? 'Add photo' : 'Photo added'),
             ),
+            const SizedBox(height: 16),
+            if (errorMessage != null) ErrorBanner(message: errorMessage!),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,

@@ -29,6 +29,12 @@ class InventoryListScreen extends StatelessWidget {
 
           final docs = snapshot.data!.docs;
 
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text('No items yet. Tap + to add one.'),
+            );
+          }
+
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
