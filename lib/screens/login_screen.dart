@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../widgets/error_banner.dart';
 import 'crew_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -105,13 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 16),
 
-            if (errorMessage != null)
-              Text(
-                errorMessage!,
-                style: const TextStyle(
-                  color: Colors.red,
-                ),
-              ),
+            if (errorMessage != null) ErrorBanner(message: errorMessage!),
 
             const SizedBox(height: 16),
 
