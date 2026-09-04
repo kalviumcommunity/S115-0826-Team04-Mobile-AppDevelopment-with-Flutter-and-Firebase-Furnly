@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'rental_detail_screen.dart';
 
 class DispatcherDashboardScreen extends StatelessWidget {
   const DispatcherDashboardScreen({super.key});
@@ -93,12 +94,21 @@ class _RentalsLiveList extends StatelessWidget {
         return ListView.builder(
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final data = docs[index].data();
+            final doc = docs[index];
+            final data = doc.data();
 
             return ListTile(
               title: Text('Customer: ${data['customerId'] ?? ''}'),
               subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
               trailing: Text('₹${data['computedCharge'] ?? 0}'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RentalDetailScreen(rentalId: doc.id),
+                  ),
+                );
+              },
             );
           },
         );
