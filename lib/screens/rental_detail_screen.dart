@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'edit_rental_screen.dart';
 
 class RentalDetailScreen extends StatelessWidget {
   final String rentalId;
@@ -9,7 +10,39 @@ class RentalDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rental Detail')),
+      appBar: AppBar(
+        title: const Text('Rental Detail'),
+        actions: [
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('rentals')
+                .doc(rentalId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              final rental =
+                  snapshot.hasData && snapshot.data!.exists
+                      ? snapshot.data!.data()!
+                      : null;
+              return IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: rental == null
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditRentalScreen(
+                              rentalId: rentalId,
+                              rentalData: rental,
+                            ),
+                          ),
+                        );
+                      },
+              );
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('rentals')

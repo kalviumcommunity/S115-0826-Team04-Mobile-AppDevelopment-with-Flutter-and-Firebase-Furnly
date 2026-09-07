@@ -13,4 +13,17 @@ class RentalService {
 
     return document.id;
   }
+
+  Future<void> updateRentalDates({
+    required String rentalId,
+    required DateTime startDate,
+    required DateTime expectedReturnDate,
+    required double ratePerDay,
+  }) async {
+    await _firestore.collection('rentals').doc(rentalId).update({
+      'startDate': Timestamp.fromDate(startDate),
+      'expectedReturnDate': Timestamp.fromDate(expectedReturnDate),
+      'ratePerDay': ratePerDay,
+    });
+  }
 }
