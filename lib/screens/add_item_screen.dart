@@ -32,6 +32,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
       return;
     }
 
+    if (nameController.text.trim().length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item name is too short')),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });

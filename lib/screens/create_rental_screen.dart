@@ -65,6 +65,23 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
       return;
     }
 
+    if (expectedReturnDate!.isBefore(startDate!) ||
+        expectedReturnDate!.isAtSameMomentAs(startDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Return date must be after start date')),
+      );
+      return;
+    }
+
+    final rate = double.tryParse(rateController.text.trim());
+
+    if (rate == null || rate <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid rate greater than 0')),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
       conflict = null;
