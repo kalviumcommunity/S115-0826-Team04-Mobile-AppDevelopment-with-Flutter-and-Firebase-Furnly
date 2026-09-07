@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/event_model.dart';
 import '../services/event_service.dart';
@@ -22,10 +24,41 @@ class _LogEventScreenState extends State<LogEventScreen> {
   String selectedType = 'delivery';
   File? selectedPhoto;
   bool isLoading = false;
+  bool isOffline = false;
   String? errorMessage;
+  StreamSubscription<void>? snapshotsInSyncSubscription;
 
   final EventService eventService = EventService();
   final ImagePicker picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    snapshotsInSyncSubscription =
+        FirebaseFirestore.instance.snapshotsInSync().listen((_) {});
+    _checkConnection();
+  }
+
+  void _checkConnection() {
+    FirebaseFirestore.instance
+        .collection('items')
+        .limit(1)
+        .get(const GetOptions(source: Source.server))
+        .then((_) {
+      if (mounted) setState(() => isOffline = false);
+    }).catchError((_) {
+      if (mounted) setState(() => isOffline = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    snapshotsInSyncSubscription?.cancel();
+    itemIdController.dispose();
+    rentalIdController.dispose();
+    notesController.dispose();
+    super.dispose();
+  }
 
   Future<void> pickPhoto() async {
     final picked = await picker.pickImage(source: ImageSource.camera);
@@ -98,6 +131,17 @@ class _LogEventScreenState extends State<LogEventScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            if (isOffline)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 12),
+                color: Colors.amber.shade100,
+                child: const Text(
+                  'Offline - this event will sync once you reconnect',
+                  style: TextStyle(color: Colors.black87),
+                ),
+              ),
             TextField(
               controller: itemIdController,
               decoration: const InputDecoration(
@@ -115,7 +159,7 @@ class _LogEventScreenState extends State<LogEventScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               decoration: const InputDecoration(
                 labelText: 'Event Type',
                 border: OutlineInputBorder(),
