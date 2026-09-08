@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import '../services/item_service.dart';
 import 'add_item_screen.dart';
 
-class InventoryListScreen extends StatelessWidget {
+class InventoryListScreen extends StatefulWidget {
   const InventoryListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final itemService = ItemService();
+  State<InventoryListScreen> createState() => _InventoryListScreenState();
+}
 
+class _InventoryListScreenState extends State<InventoryListScreen> {
+  final itemService = ItemService();
+  final searchController = TextEditingController();
+
+  String searchQuery = '';
+  String? categoryFilter;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Inventory')),
       floatingActionButton: FloatingActionButton(
@@ -20,34 +29,65 @@ class InventoryListScreen extends StatelessWidget {
         },
         child: const Icon(Icons.add),
       ),
-      body: StreamBuilder(
-        stream: itemService.getAllItems(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                labelText: 'Search items',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: itemService.getAllItems(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final docs = snapshot.data!.docs;
+                var docs = snapshot.data!.docs;
 
-          if (docs.isEmpty) {
-            return const Center(
-              child: Text('No items yet. Tap + to add one.'),
-            );
-          }
+                if (searchQuery.isNotEmpty) {
+                  docs = docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final name = (data['name'] ?? '').toString().toLowerCase();
+                    final category =
+                        (data['category'] ?? '').toString().toLowerCase();
+                    return name.contains(searchQuery) ||
+                        category.contains(searchQuery);
+                  }).toList();
+                }
 
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data();
+                if (docs.isEmpty) {
+                  return const Center(child: Text('No matching items.'));
+                }
 
-              return ListTile(
-                title: Text(data['name'] ?? ''),
-                subtitle: Text(data['category'] ?? ''),
-                trailing: Text(data['currentStatus'] ?? ''),
-              );
-            },
-          );
-        },
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+
+                    return ListTile(
+                      title: Text(data['name'] ?? ''),
+                      subtitle: Text(data['category'] ?? ''),
+                      trailing: Text(data['currentStatus'] ?? ''),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
