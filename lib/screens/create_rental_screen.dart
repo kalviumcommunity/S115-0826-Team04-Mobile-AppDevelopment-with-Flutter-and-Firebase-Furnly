@@ -3,6 +3,7 @@ import '../models/rental_model.dart';
 import '../services/rental_service.dart';
 import '../services/conflict_service.dart';
 import '../widgets/conflict_alert.dart';
+import '../widgets/loading_indicator.dart';
 
 class CreateRentalScreen extends StatefulWidget {
   const CreateRentalScreen({super.key});
@@ -140,65 +141,68 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Rental')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: customerController,
-              decoration: const InputDecoration(
-                labelText: 'Customer ID',
-                border: OutlineInputBorder(),
+      body: AbsorbPointer(
+        absorbing: isLoading,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              TextField(
+                controller: customerController,
+                decoration: const InputDecoration(
+                  labelText: 'Customer ID',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: itemsController,
-              decoration: const InputDecoration(
-                labelText: 'Item IDs (comma separated)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: itemsController,
+                decoration: const InputDecoration(
+                  labelText: 'Item IDs (comma separated)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              title: Text(startDate == null
-                  ? 'Select start date'
-                  : 'Start: ${startDate!.day}/${startDate!.month}/${startDate!.year}'),
-              onTap: pickStart,
-            ),
-            ListTile(
-              title: Text(expectedReturnDate == null
-                  ? 'Select return date'
-                  : 'Return: ${expectedReturnDate!.day}/${expectedReturnDate!.month}/${expectedReturnDate!.year}'),
-              onTap: pickReturn,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: rateController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Rate per day',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              ListTile(
+                title: Text(startDate == null
+                    ? 'Select start date'
+                    : 'Start: ${startDate!.day}/${startDate!.month}/${startDate!.year}'),
+                onTap: pickStart,
               ),
-            ),
-            const SizedBox(height: 20),
-            if (conflict != null)
-              ConflictAlert(
-                title: 'Conflict Detected',
-                message:
-                    'Item already booked under rental ${conflict!['rentalId']}',
+              ListTile(
+                title: Text(expectedReturnDate == null
+                    ? 'Select return date'
+                    : 'Return: ${expectedReturnDate!.day}/${expectedReturnDate!.month}/${expectedReturnDate!.year}'),
+                onTap: pickReturn,
               ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : submit,
-                child: isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Create Rental'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: rateController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Rate per day',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              if (conflict != null)
+                ConflictAlert(
+                  title: 'Conflict Detected',
+                  message:
+                      'Item already booked under rental ${conflict!["rentalId"]}',
+                ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : submit,
+                  child: isLoading
+                      ? const LoadingIndicator(message: 'Submitting...')
+                      : const Text('Create Rental'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

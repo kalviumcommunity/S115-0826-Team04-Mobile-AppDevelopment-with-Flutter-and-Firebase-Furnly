@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/conflict_alert.dart';
+import '../widgets/loading_indicator.dart';
 import 'rental_detail_screen.dart';
 
 class DispatcherDashboardScreen extends StatelessWidget {
@@ -39,7 +40,7 @@ class _ItemsLiveList extends StatelessWidget {
       stream: FirebaseFirestore.instance.collection('items').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const LoadingIndicator(message: 'Loading inventory...');
         }
 
         final docs = snapshot.data!.docs;
@@ -117,7 +118,7 @@ class _RentalsLiveList extends StatelessWidget {
               .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const LoadingIndicator(message: 'Loading rentals...');
         }
 
         final docs = snapshot.data!.docs;
