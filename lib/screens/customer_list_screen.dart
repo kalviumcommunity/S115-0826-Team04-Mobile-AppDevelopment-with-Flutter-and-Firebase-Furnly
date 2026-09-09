@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/customer_model.dart';
 import '../services/customer_service.dart';
+import 'customer_detail_screen.dart';
 
 class CustomerListScreen extends StatelessWidget {
   const CustomerListScreen({super.key});
@@ -40,6 +41,17 @@ class CustomerListScreen extends StatelessWidget {
                   docs[index].id.substring(0, 6),
                   style: const TextStyle(color: Colors.grey),
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CustomerDetailScreen(
+                        customerId: docs[index].id,
+                        customerName: data['name'] ?? '',
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
