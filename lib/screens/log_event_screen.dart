@@ -127,9 +127,11 @@ class _LogEventScreenState extends State<LogEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Log Delivery / Pickup')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      body: AbsorbPointer(
+        absorbing: isLoading,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
           children: [
             if (isOffline)
               Container(
@@ -205,7 +207,8 @@ class _LogEventScreenState extends State<LogEventScreen> {
                     : const Text('Log Event'),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
