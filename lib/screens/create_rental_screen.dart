@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/rental_model.dart';
 import '../services/rental_service.dart';
 import '../services/conflict_service.dart';
@@ -13,7 +14,9 @@ class CreateRentalScreen extends StatefulWidget {
 }
 
 class _CreateRentalScreenState extends State<CreateRentalScreen> {
-  final customerController = TextEditingController();
+  // Customer is now selected from a Firestore-backed dropdown, not free text.
+  String? selectedCustomerId;
+
   final itemsController = TextEditingController();
   final rateController = TextEditingController();
 
@@ -28,7 +31,6 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
 
   @override
   void dispose() {
-    customerController.dispose();
     itemsController.dispose();
     rateController.dispose();
     super.dispose();
@@ -55,7 +57,8 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
   }
 
   Future<void> submit() async {
-    if (customerController.text.trim().isEmpty ||
+    // Validate: selectedCustomerId replaces customerController.text
+    if (selectedCustomerId == null ||
         itemsController.text.trim().isEmpty ||
         startDate == null ||
         expectedReturnDate == null ||
@@ -110,8 +113,9 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
       }
     }
 
+    // Pass selectedCustomerId! — now a real Firestore document ID.
     final rental = RentalModel(
-      customerId: customerController.text.trim(),
+      customerId: selectedCustomerId!,
       itemIds: itemIds,
       startDate: startDate!,
       expectedReturnDate: expectedReturnDate!,
@@ -126,11 +130,11 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
       const SnackBar(content: Text('Rental created successfully')),
     );
 
-    customerController.clear();
     itemsController.clear();
     rateController.clear();
 
     setState(() {
+      selectedCustomerId = null;
       startDate = null;
       expectedReturnDate = null;
       isLoading = false;
@@ -147,12 +151,38 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              TextField(
-                controller: customerController,
-                decoration: const InputDecoration(
-                  labelText: 'Customer ID',
-                  border: OutlineInputBorder(),
-                ),
+              // ── Customer Dropdown (replaces free-text Customer ID field) ──
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('customers')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final customers = snapshot.data!.docs;
+
+                  return DropdownButtonFormField<String>(
+                    value: selectedCustomerId,
+                    decoration: const InputDecoration(
+                      labelText: 'Customer',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: customers.map((doc) {
+                      final data = doc.data();
+                      return DropdownMenuItem<String>(
+                        value: doc.id,
+                        child: Text(data['name'] ?? 'Unnamed'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCustomerId = value;
+                      });
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 16),
               TextField(
