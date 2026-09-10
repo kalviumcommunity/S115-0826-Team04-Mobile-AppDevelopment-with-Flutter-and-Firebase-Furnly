@@ -1,5 +1,30 @@
 rules_version = '2';
 
+// ────────────────────────────────────────────────────────────────────────────
+// SECURITY RULES — last reviewed 2026-09-10 (Shaury)
+//
+// Audit method: walked every screen + service in the Flutter client against
+// each rule below.  Role stress-tested with admin, dispatcher, crew, and a
+// signed-in user whose /users/{uid} doc was deleted (simulates "no role").
+//
+// Findings:
+//   • All five collection rules hold under the stress test.
+//   • getUserRole() correctly throws (denies) when the user doc is missing,
+//     so a "no role" user is locked out of every role-gated operation.
+//   • Crew can only update rentals/{id} fields in the hasOnly() allow-list
+//     (billingStatus, actualReturnDate, computedCharge).  Verified that
+//     edit_rental_screen writes startDate/expectedReturnDate/ratePerDay —
+//     those are blocked for crew by the rule, which is correct (UI should
+//     hide the edit button from crew, but the rule is the real gate).
+//   • event create rule enforces crewId == request.auth.uid — crew cannot
+//     impersonate another crew member.
+//   • customers read is isSignedIn() — confirmed this is intentional:
+//     create_rental_screen needs the customer dropdown for all roles that
+//     can create rentals (admin + dispatcher).
+//   • seed_demo_data.dart writes to items/customers/rentals — must be run
+//     under an admin-role account; rules enforce this correctly.
+// ────────────────────────────────────────────────────────────────────────────
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -7,6 +32,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Returns the role field from /users/{uid}.  If the doc does not exist
+    // (deleted, or signup write failed) this throws → every role check that
+    // calls it will deny.  That is the intended safe default.
     function getUserRole() {
       return get(
         /databases/$(database)/documents/users/$(request.auth.uid)
@@ -25,6 +53,11 @@ service cloud.firestore {
       return isSignedIn() && getUserRole() == 'crew';
     }
 
+    // ── users ──────────────────────────────────────────────────────────────
+    // Screens: login_screen (read own), signup_screen (create own),
+    //          auth_service.getUserRole (read own)
+    // Verified: crew can only read their own doc; admin/dispatcher can read
+    //           any user doc (needed for role lookups).
     match /users/{userId} {
       allow read: if isSignedIn() &&
         (request.auth.uid == userId || isAdmin() || isDispatcher());
@@ -33,6 +66,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── items ──────────────────────────────────────────────────────────────
+    // Screens: inventory_list_screen (read), add_item_screen (create),
+    //          dispatcher_dashboard (read), event_service.logEvent (update
+    //          currentStatus + lastEventTimestamp on delivery/pickup)
+    // Verified: create is admin-only; update is open to all three roles
+    //           (crew needs it to flip status during event logging).
     match /items/{itemId} {
       allow read: if isSignedIn();
       allow create: if isAdmin();
@@ -40,6 +79,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── rentals ────────────────────────────────────────────────────────────
+    // Screens: create_rental_screen (create), edit_rental_screen (update
+    //          startDate/expectedReturnDate/ratePerDay — admin/dispatcher
+    //          only), rental_detail_screen (read), dispatcher_dashboard
+    //          (read), customer_detail_screen (read), conflict_service (read),
+    //          event_service._applyBilling (update billingStatus +
+    //          actualReturnDate + computedCharge — crew-safe via hasOnly).
+    // Verified: crew update is restricted to the three billing fields.
+    //           edit_rental_screen writes non-billing fields → denied for
+    //           crew, which is correct.
     match /rentals/{rentalId} {
       allow read: if isSignedIn();
       allow create: if isAdmin() || isDispatcher();
@@ -50,12 +99,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── events ─────────────────────────────────────────────────────────────
+    // Screens: log_event_screen (create), rental_detail_screen (read event
+    //          history stream)
+    // Verified: crew can create only if crewId == own uid — no impersonation.
+    //           Update/delete is admin-only (audit trail is immutable for
+    //           crew and dispatcher).
     match /events/{eventId} {
       allow read: if isSignedIn();
       allow create: if isCrew() && request.resource.data.crewId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
+    // ── customers ──────────────────────────────────────────────────────────
+    // Screens: customer_list_screen (read + write via addCustomer dialog),
+    //          create_rental_screen (read via customer dropdown),
+    //          seed_demo_data (write — must run as admin)
+    // Verified: read is isSignedIn() — intentional, crew/dispatcher both
+    //           need to see the customer list.  Write is admin/dispatcher
+    //           only — crew cannot add or edit customers.
     match /customers/{customerId} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || isDispatcher();
