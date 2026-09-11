@@ -74,10 +74,10 @@ class _ItemsLiveList extends StatelessWidget {
 class _RentalsLiveList extends StatelessWidget {
   const _RentalsLiveList();
 
-  List<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _findConflicts(
+  Map<String, List<String>> _findConflictGroups(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
-    final conflicts = <List<QueryDocumentSnapshot<Map<String, dynamic>>>>[];
+    final conflictMap = <String, List<String>>{};
 
     for (var i = 0; i < docs.length; i++) {
       final first = docs[i].data();
@@ -87,7 +87,9 @@ class _RentalsLiveList extends StatelessWidget {
       final firstStart = (first['startDate'] as Timestamp).toDate();
       final firstEnd = (first['expectedReturnDate'] as Timestamp).toDate();
 
-      for (var j = i + 1; j < docs.length; j++) {
+      for (var j = 0; j < docs.length; j++) {
+        if (i == j) continue;
+
         final second = docs[j].data();
         if (second['actualReturnDate'] != null) continue;
 
@@ -100,12 +102,12 @@ class _RentalsLiveList extends StatelessWidget {
             firstStart.isBefore(secondEnd) && secondStart.isBefore(firstEnd);
 
         if (sharedItem && overlaps) {
-          conflicts.add([docs[i], docs[j]]);
+          conflictMap.putIfAbsent(docs[i].id, () => []).add(docs[j].id);
         }
       }
     }
 
-    return conflicts;
+    return conflictMap;
   }
 
   @override
@@ -122,26 +124,26 @@ class _RentalsLiveList extends StatelessWidget {
         }
 
         final docs = snapshot.data!.docs;
-        final conflicts = _findConflicts(docs);
+        final conflictGroups = _findConflictGroups(docs);
 
         return ListView(
           children: [
-            ...conflicts.map(
-              (pair) => Padding(
+            ...conflictGroups.entries.map(
+              (group) => Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
                 ),
                 child: ConflictAlert(
                   title: 'Conflict Detected',
-                  message:
-                      'Rentals ${pair[0].id} and ${pair[1].id} share an overlapping item and date range.',
+                    message: 'Rental ${group.key} conflicts with '
+                      '${group.value.join(', ')}.',
                   onReview: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder:
-                            (_) => RentalDetailScreen(rentalId: pair[0].id),
+                            (_) => RentalDetailScreen(rentalId: group.key),
                       ),
                     );
                   },
