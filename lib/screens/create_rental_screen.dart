@@ -164,7 +164,7 @@ class _CreateRentalScreenState extends State<CreateRentalScreen> {
                   final customers = snapshot.data!.docs;
 
                   return DropdownButtonFormField<String>(
-                    value: selectedCustomerId,
+                    initialValue: selectedCustomerId,
                     decoration: const InputDecoration(
                       labelText: 'Customer',
                       border: OutlineInputBorder(),

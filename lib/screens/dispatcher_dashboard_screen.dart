@@ -150,17 +150,34 @@ class _RentalsLiveList extends StatelessWidget {
             ),
             ...docs.map((doc) {
               final data = doc.data();
+              final customerId = data['customerId'] as String? ?? '';
 
-              return ListTile(
-                title: Text('Customer: ${data['customerId'] ?? ''}'),
-                subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
-                trailing: Text('₹${data['computedCharge'] ?? 0}'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RentalDetailScreen(rentalId: doc.id),
-                    ),
+              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                future: customerId.isEmpty
+                    ? Future<DocumentSnapshot<Map<String, dynamic>>?>.value(null)
+                    : FirebaseFirestore.instance
+                        .collection('customers')
+                        .doc(customerId)
+                        .get(),
+                builder: (context, customerSnap) {
+                  final customerName = customerSnap.hasData &&
+                          customerSnap.data != null &&
+                          customerSnap.data!.exists
+                      ? (customerSnap.data!.data()?['name'] ?? customerId)
+                      : customerId;
+
+                  return ListTile(
+                    title: Text('Customer: $customerName'),
+                    subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
+                    trailing: Text('₹${data['computedCharge'] ?? 0}'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RentalDetailScreen(rentalId: doc.id),
+                        ),
+                      );
+                    },
                   );
                 },
               );
