@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_rental_screen.dart';
 
 class RentalDetailScreen extends StatelessWidget {
@@ -61,34 +62,56 @@ class RentalDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Rental Detail'),
         actions: [
-          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream:
-                FirebaseFirestore.instance
-                    .collection('rentals')
-                    .doc(rentalId)
-                    .snapshots(),
-            builder: (context, snapshot) {
-              final rental =
-                  snapshot.hasData && snapshot.data!.exists
-                      ? snapshot.data!.data()!
-                      : null;
-              return IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed:
-                    rental == null
-                        ? null
-                        : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => EditRentalScreen(
-                                    rentalId: rentalId,
-                                    rentalData: rental,
-                                  ),
-                            ),
-                          );
-                        },
+          // Only show the Edit button for admin / dispatcher.
+          // Crew is blocked by Firestore rules (hasOnly guard on
+          // billingStatus, actualReturnDate, computedCharge), but
+          // letting them open the form leads to a confusing
+          // PERMISSION_DENIED error — hide the button instead.
+          FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+            future: () async {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid == null) return null;
+              return FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .get();
+            }(),
+            builder: (context, roleSnap) {
+              final role = roleSnap.data?.data()?['role'];
+              if (role == 'crew' || role == null) {
+                return const SizedBox.shrink();
+              }
+
+              return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('rentals')
+                        .doc(rentalId)
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  final rental =
+                      snapshot.hasData && snapshot.data!.exists
+                          ? snapshot.data!.data()!
+                          : null;
+                  return IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed:
+                        rental == null
+                            ? null
+                            : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => EditRentalScreen(
+                                        rentalId: rentalId,
+                                        rentalData: rental,
+                                      ),
+                                ),
+                              );
+                            },
+                  );
+                },
               );
             },
           ),
