@@ -10,26 +10,32 @@ class EventService {
   Future<void> logEvent(EventModel event, {File? photo}) async {
     final docRef = _firestore.collection('events').doc();
 
-    String? photoUrl;
-
-    if (photo != null) {
-      final ref = _storage.ref().child('event_photos/${docRef.id}.jpg');
-      await ref.putFile(photo);
-      photoUrl = await ref.getDownloadURL();
-    }
-
-    await docRef.set({
+    // Fire and forget Firestore writes so they queue gracefully offline.
+    // Awaiting them would block indefinitely without a connection.
+    docRef.set({
       ...event.toMap(),
-      'photoUrl': photoUrl,
+      'photoUrl': null,
     });
 
-    await _firestore.collection('items').doc(event.itemId).update({
+    _firestore.collection('items').doc(event.itemId).update({
       'currentStatus': event.type == 'pickup' ? 'available' : 'out',
       'lastEventTimestamp': FieldValue.serverTimestamp(),
     });
 
     if (event.type == 'pickup') {
-      await _applyBilling(event.rentalId);
+      _applyBilling(event.rentalId);
+    }
+
+    if (photo != null) {
+      try {
+        final ref = _storage.ref().child('event_photos/${docRef.id}.jpg');
+        // This will throw if offline, but the event is already queued above.
+        await ref.putFile(photo);
+        final photoUrl = await ref.getDownloadURL();
+        await docRef.update({'photoUrl': photoUrl});
+      } catch (e) {
+        // Photo upload failed (e.g. offline), but the event was logged.
+      }
     }
   }
 
