@@ -19,7 +19,13 @@ class ConflictService {
       if (data['actualReturnDate'] != null) continue;
 
       final existingStart = (data['startDate'] as Timestamp).toDate();
-      final existingEnd = (data['expectedReturnDate'] as Timestamp).toDate();
+      DateTime existingEnd = (data['expectedReturnDate'] as Timestamp).toDate();
+
+      // If the rental is overdue but not returned, it is effectively still 
+      // occupying the item at least until now.
+      if (existingEnd.isBefore(DateTime.now())) {
+        existingEnd = DateTime.now().add(const Duration(minutes: 5));
+      }
 
       final overlaps =
           existingStart.isBefore(endDate) && startDate.isBefore(existingEnd);

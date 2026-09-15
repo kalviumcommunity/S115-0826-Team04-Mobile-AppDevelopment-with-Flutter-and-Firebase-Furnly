@@ -20,11 +20,12 @@ class RentalDetailScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final fallbackTime = DateTime.now();
     deliveryEvents.sort((a, b) {
       final aTime =
-          (a.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+          (a.data()['timestamp'] as Timestamp?)?.toDate() ?? fallbackTime;
       final bTime =
-          (b.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+          (b.data()['timestamp'] as Timestamp?)?.toDate() ?? fallbackTime;
       return aTime.compareTo(bTime);
     });
 
