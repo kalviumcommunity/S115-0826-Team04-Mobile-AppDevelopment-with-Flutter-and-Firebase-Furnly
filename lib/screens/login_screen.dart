@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../widgets/error_banner.dart';
 import 'crew_home_screen.dart';
+import 'dispatcher_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,11 +39,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final role = await authService.getUserRole(user.uid);
 
-      if (role != 'crew') {
+      if (role == null) {
         await authService.logout();
 
         setState(() {
-          errorMessage = 'This login is only for crew members.';
+          errorMessage = 'Account has no role assigned. Contact your admin.';
         });
 
         return;
@@ -50,12 +51,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CrewHomeScreen(),
-        ),
-      );
+      if (role == 'crew') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CrewHomeScreen(),
+          ),
+        );
+      } else {
+        // admin and dispatcher both land on the dispatcher dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DispatcherDashboardScreen(),
+          ),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message ?? 'Login failed.';
@@ -77,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Furnly Crew Login'),
+        title: const Text('Furnly Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),

@@ -32,7 +32,7 @@ class CustomerListScreen extends StatelessWidget {
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              final data = docs[index].data();
 
               return ListTile(
                 title: Text(data['name'] ?? ''),

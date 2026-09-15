@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/item_service.dart';
 import 'add_item_screen.dart';
 
@@ -48,7 +49,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: itemService.getAllItems(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -59,7 +60,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 
                 if (searchQuery.isNotEmpty) {
                   docs = docs.where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
+                    final data = doc.data();
                     final name = (data['name'] ?? '').toString().toLowerCase();
                     final category =
                         (data['category'] ?? '').toString().toLowerCase();
@@ -75,7 +76,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
+                    final data = docs[index].data();
 
                     return ListTile(
                       title: Text(data['name'] ?? ''),
