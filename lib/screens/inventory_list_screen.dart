@@ -33,6 +33,26 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
       body: Column(
         children: [
           Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: StreamBuilder(
+              stream: itemService.getAllItems(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+
+                final docs = snapshot.data!.docs;
+                final available = docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['currentStatus'] == 'available';
+                }).length;
+
+                return Text(
+                  '${docs.length} items total — $available available',
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                );
+              },
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: searchController,
