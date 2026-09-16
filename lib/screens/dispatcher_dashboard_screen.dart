@@ -45,26 +45,31 @@ class _ItemsLiveList extends StatelessWidget {
 
         final docs = snapshot.data!.docs;
 
-        return ListView.builder(
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data();
-
-            return ListTile(
-              title: Text(data['name'] ?? ''),
-              subtitle: Text(data['category'] ?? ''),
-              trailing: Text(
-                data['currentStatus'] ?? '',
-                style: TextStyle(
-                  color:
-                      data['currentStatus'] == 'available'
-                          ? Colors.green
-                          : Colors.orange,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            );
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.delayed(const Duration(milliseconds: 500));
           },
+          child: ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data();
+
+              return ListTile(
+                title: Text(data['name'] ?? ''),
+                subtitle: Text(data['category'] ?? ''),
+                trailing: Text(
+                  data['currentStatus'] ?? '',
+                  style: TextStyle(
+                    color:
+                        data['currentStatus'] == 'available'
+                            ? Colors.green
+                            : Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -124,65 +129,70 @@ class _RentalsLiveList extends StatelessWidget {
         final docs = snapshot.data!.docs;
         final conflicts = _findConflicts(docs);
 
-        return ListView(
-          children: [
-            ...conflicts.map(
-              (pair) => Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                child: ConflictAlert(
-                  title: 'Conflict Detected',
-                  message:
-                      'Rentals ${pair[0].id} and ${pair[1].id} share an overlapping item and date range.',
-                  onReview: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => RentalDetailScreen(rentalId: pair[0].id),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            ...docs.map((doc) {
-              final data = doc.data();
-              final customerId = data['customerId'] as String? ?? '';
-
-              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
-                future: customerId.isEmpty
-                    ? Future<DocumentSnapshot<Map<String, dynamic>>?>.value(null)
-                    : FirebaseFirestore.instance
-                        .collection('customers')
-                        .doc(customerId)
-                        .get(),
-                builder: (context, customerSnap) {
-                  final customerName = customerSnap.hasData &&
-                          customerSnap.data != null &&
-                          customerSnap.data!.exists
-                      ? (customerSnap.data!.data()?['name'] ?? customerId)
-                      : customerId;
-
-                  return ListTile(
-                    title: Text('Customer: $customerName'),
-                    subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
-                    trailing: Text('₹${data['computedCharge'] ?? 0}'),
-                    onTap: () {
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: ListView(
+            children: [
+              ...conflicts.map(
+                (pair) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  child: ConflictAlert(
+                    title: 'Conflict Detected',
+                    message:
+                        'Rentals ${pair[0].id} and ${pair[1].id} share an overlapping item and date range.',
+                    onReview: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => RentalDetailScreen(rentalId: doc.id),
+                          builder:
+                              (_) => RentalDetailScreen(rentalId: pair[0].id),
                         ),
                       );
                     },
-                  );
-                },
-              );
-            }),
-          ],
+                  ),
+                ),
+              ),
+              ...docs.map((doc) {
+                final data = doc.data();
+                final customerId = data['customerId'] as String? ?? '';
+
+                return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                  future: customerId.isEmpty
+                      ? Future<DocumentSnapshot<Map<String, dynamic>>?>.value(null)
+                      : FirebaseFirestore.instance
+                          .collection('customers')
+                          .doc(customerId)
+                          .get(),
+                  builder: (context, customerSnap) {
+                    final customerName = customerSnap.hasData &&
+                            customerSnap.data != null &&
+                            customerSnap.data!.exists
+                        ? (customerSnap.data!.data()?['name'] ?? customerId)
+                        : customerId;
+
+                    return ListTile(
+                      title: Text('Customer: $customerName'),
+                      subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
+                      trailing: Text('₹${data['computedCharge'] ?? 0}'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RentalDetailScreen(rentalId: doc.id),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
         );
       },
     );
