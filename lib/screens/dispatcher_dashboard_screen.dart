@@ -76,8 +76,15 @@ class _ItemsLiveList extends StatelessWidget {
   }
 }
 
-class _RentalsLiveList extends StatelessWidget {
+class _RentalsLiveList extends StatefulWidget {
   const _RentalsLiveList();
+
+  @override
+  State<_RentalsLiveList> createState() => _RentalsLiveListState();
+}
+
+class _RentalsLiveListState extends State<_RentalsLiveList> {
+  String filter = 'all';
 
   List<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _findConflicts(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
@@ -115,86 +122,150 @@ class _RentalsLiveList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('rentals')
-              .orderBy('startDate', descending: true)
-              .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const LoadingIndicator(message: 'Loading rentals...');
-        }
-
-        final docs = snapshot.data!.docs;
-        final conflicts = _findConflicts(docs);
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: ListView(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
             children: [
-              ...conflicts.map(
-                (pair) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  child: ConflictAlert(
-                    title: 'Conflict Detected',
-                    message:
-                        'Rentals ${pair[0].id} and ${pair[1].id} share an overlapping item and date range.',
-                    onReview: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => RentalDetailScreen(rentalId: pair[0].id),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              ChoiceChip(
+                label: const Text('All'),
+                selected: filter == 'all',
+                onSelected: (_) => setState(() => filter = 'all'),
               ),
-              ...docs.map((doc) {
-                final data = doc.data();
-                final customerId = data['customerId'] as String? ?? '';
-
-                return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
-                  future: customerId.isEmpty
-                      ? Future<DocumentSnapshot<Map<String, dynamic>>?>.value(null)
-                      : FirebaseFirestore.instance
-                          .collection('customers')
-                          .doc(customerId)
-                          .get(),
-                  builder: (context, customerSnap) {
-                    final customerName = customerSnap.hasData &&
-                            customerSnap.data != null &&
-                            customerSnap.data!.exists
-                        ? (customerSnap.data!.data()?['name'] ?? customerId)
-                        : customerId;
-
-                    return ListTile(
-                      title: Text('Customer: $customerName'),
-                      subtitle: Text('Status: ${data['billingStatus'] ?? ''}'),
-                      trailing: Text('₹${data['computedCharge'] ?? 0}'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RentalDetailScreen(rentalId: doc.id),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              }),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Active'),
+                selected: filter == 'pending',
+                onSelected: (_) => setState(() => filter = 'pending'),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Completed'),
+                selected: filter == 'completed',
+                onSelected: (_) => setState(() => filter = 'completed'),
+              ),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('rentals')
+                    .orderBy('startDate', descending: true)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const LoadingIndicator(message: 'Loading rentals...');
+              }
+
+              final allDocs = snapshot.data!.docs;
+              final conflicts = _findConflicts(allDocs);
+
+              var docs = allDocs;
+
+              if (filter != 'all') {
+                docs = docs.where((doc) {
+                  final data = doc.data();
+                  return data['billingStatus'] == filter;
+                }).toList();
+              }
+
+              if (conflicts.isEmpty && docs.isEmpty) {
+                return const Center(child: Text('No rentals in this view.'));
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: ListView(
+                  children: [
+                    ...conflicts.map(
+                      (pair) => Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        child: ConflictAlert(
+                          title: 'Conflict Detected',
+                          message:
+                              'Rentals ${pair[0].id} and ${pair[1].id} share an overlapping item and date range.',
+                          onReview: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) =>
+                                        RentalDetailScreen(rentalId: pair[0].id),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    if (docs.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: Text('No rentals in this view.')),
+                      )
+                    else
+                      ...docs.map((doc) {
+                        final data = doc.data();
+                        final customerId = data['customerId'] as String? ?? '';
+
+                        return FutureBuilder<
+                          DocumentSnapshot<Map<String, dynamic>>?
+                        >(
+                          future:
+                              customerId.isEmpty
+                                  ? Future<
+                                    DocumentSnapshot<
+                                      Map<String, dynamic>
+                                    >?
+                                  >.value(null)
+                                  : FirebaseFirestore.instance
+                                      .collection('customers')
+                                      .doc(customerId)
+                                      .get(),
+                          builder: (context, customerSnap) {
+                            final customerName =
+                                customerSnap.hasData &&
+                                        customerSnap.data != null &&
+                                        customerSnap.data!.exists
+                                    ? (customerSnap.data!.data()?['name'] ??
+                                        customerId)
+                                    : customerId;
+
+                            return ListTile(
+                              title: Text('Customer: $customerName'),
+                              subtitle: Text(
+                                'Status: ${data['billingStatus'] ?? ''}',
+                              ),
+                              trailing: Text('₹${data['computedCharge'] ?? 0}'),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => RentalDetailScreen(
+                                          rentalId: doc.id,
+                                        ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
