@@ -15,6 +15,39 @@ class DispatcherDashboardScreen extends StatelessWidget {
         length: 2,
         child: Column(
           children: [
+            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance.collection('items').snapshots(),
+              builder: (context, itemsSnapshot) {
+                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('rentals')
+                      .where('billingStatus', isEqualTo: 'pending')
+                      .snapshots(),
+                  builder: (context, rentalsSnapshot) {
+                    final totalItems = itemsSnapshot.data?.docs.length ?? 0;
+                    final outItems = itemsSnapshot.data?.docs.where((doc) {
+                          final data = doc.data();
+                          return data['currentStatus'] == 'out';
+                        }).length ??
+                        0;
+                    final activeRentals = rentalsSnapshot.data?.docs.length ?? 0;
+
+                    return Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          _StatChip(label: 'Items', value: '$totalItems'),
+                          const SizedBox(width: 8),
+                          _StatChip(label: 'Out', value: '$outItems'),
+                          const SizedBox(width: 8),
+                          _StatChip(label: 'Active rentals', value: '$activeRentals'),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
             const TabBar(
               labelColor: Colors.black,
               tabs: [Tab(text: 'Items'), Tab(text: 'Rentals')],
@@ -266,6 +299,34 @@ class _RentalsLiveListState extends State<_RentalsLiveList> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      ),
     );
   }
 }
