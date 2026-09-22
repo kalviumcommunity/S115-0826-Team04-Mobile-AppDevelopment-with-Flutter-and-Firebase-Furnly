@@ -1,0 +1,74 @@
+# .cursorrules — FurniTrack
+
+You are working in a Flutter + Firebase project called FurniTrack, built for
+a Kalvium (B.Tech CSE, Software Product Engineering) sprint-integration
+assignment. Before making changes, read these files in this order — they
+are the source of truth, not this file's summaries of them:
+
+1. `PRD.md` — what the app must do and why, MVP vs stretch scope.
+2. `architecture.md` — folder structure, data model, core flows, known gaps.
+3. `design.md` — screen-by-screen UI intent and what not to change.
+4. `phases.md` — the build order; work the next unfinished phase unless
+   told otherwise.
+
+## Non-negotiable constraints
+- **Screens never call Firebase directly.** All Firestore/Auth/Storage
+  access goes through `lib/services/*_service.dart`. If a screen needs new
+  data access, add a method to the relevant service first.
+- **Don't touch the conflict-check logic in `FirestoreService.createRental`**
+  or the close-out logic in `closeRental` without re-reading
+  `architecture.md`'s "Core flows" section — these two methods are the
+  actual fix for the assignment's problem statement. A regression here is
+  a regression in the whole point of the app.
+- **`rentals.status` is the single source of truth** for whether an item is
+  currently out. Don't derive "is it rented" from `deliveryEvents` or from
+  `items.status` — read `architecture.md`'s "Why this shape" note before
+  changing this.
+- Every stream-backed screen must handle loading / error / empty states
+  explicitly (see `OverdueItemsScreen` for the pattern). Don't ship a
+  `StreamBuilder` that only handles the happy path.
+- Every write path needs a validator (forms) or an explicit business-rule
+  check (like the conflict check) before it touches Firestore — don't
+  remove validation to make a demo path shorter.
+- Firestore security rules (`firestore.rules`) must stay in sync with any
+  new collection or role boundary you add. If you add a write path, add
+  the matching rule in the same change.
+
+## Code style
+- Dart, null-safe, Flutter Material 3 (`useMaterial3: true`).
+- One screen per file in `lib/screens/`; small reusable presentational
+  widgets in `lib/widgets/`; plain data classes with `fromMap`/`toMap` in
+  `lib/models/` — no business logic in models.
+- Prefer `StreamBuilder` over one-off `get()` calls for anything the ops
+  or crew UI treats as "current state" — this app's whole premise is live
+  data, not polling.
+- Keep new dependencies minimal; this is a student sprint project, not a
+  production app — don't introduce a state-management library (Provider,
+  Riverpod, Bloc) or routing package unless explicitly asked. `setState`
+  and `StreamBuilder` are sufficient for this scope.
+- Match the existing error-message tone: short, specific, written for a
+  crew member standing at a customer's door (see `design.md` → Copy/tone).
+
+## When adding a new phase feature (see `phases.md`)
+1. Confirm which phase it belongs to and what's explicitly listed as its
+   test/done condition.
+2. Add/extend the service method(s) first, then the screen.
+3. Update `firestore.rules` if a new collection or write path is involved.
+4. Update `architecture.md`'s "Known placeholders / TODOs" section if you
+   close out a listed gap, or add a new one if you knowingly leave
+   something unfinished.
+
+## Explicitly out of scope — don't build unless asked
+- Payments/invoicing integration.
+- Route optimization or crew scheduling/dispatch.
+- Multi-city/multi-warehouse inventory.
+- Social auth, password reset UI.
+- Any state-management or routing package beyond Flutter's built-ins.
+
+## Environment notes
+- `lib/firebase_options.dart` is a placeholder that throws
+  `UnsupportedError` — it must be regenerated with `flutterfire configure`
+  against a real Firebase project before the app will run. Don't try to
+  hand-write real-looking API keys into it.
+- No item-seeding UI exists yet (that's Phase 2) — items must be added via
+  the Firestore console for manual testing until then.
