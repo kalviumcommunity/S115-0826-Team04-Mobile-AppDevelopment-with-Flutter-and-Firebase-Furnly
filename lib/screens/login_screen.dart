@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/error_banner.dart';
 import 'crew_home_screen.dart';
 import 'dispatcher_dashboard_screen.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +21,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool isLoading = false;
   String? errorMessage;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> login() async {
     setState(() {
@@ -129,6 +137,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const CircularProgressIndicator()
                     : const Text('Login'),
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Don't have an account?"),
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SignupScreen(),
+                            ),
+                          );
+                        },
+                  child: const Text('Sign Up'),
+                ),
+              ],
             ),
           ],
         ),
